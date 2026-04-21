@@ -1,0 +1,3 @@
+# This directory stores the cached OSMnx graph (graph.pkl).
+# It is auto-created on first run. Do not delete graph.pkl
+# unless you want to force a fresh download.

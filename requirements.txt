@@ -1,0 +1,9 @@
+osmnx>=1.9.0
+networkx>=3.2
+pandas>=2.0
+numpy>=1.24
+folium>=0.16
+matplotlib>=3.7
+scipy>=1.11
+tqdm>=4.65
+requests>=2.31

@@ -1,0 +1,17 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Data cache (Graph pkl)
+data/*.pkl
+
+# Environments
+.venv/
+env/
+venv/
+ENV/
+
+# Scratch scripts
+scratch/
