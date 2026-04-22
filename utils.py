@@ -4,11 +4,14 @@ from __future__ import annotations
 
 from typing import Dict, List, Tuple
 
+import folium
 import networkx as nx
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import pydeck as pdk
+from branca.element import MacroElement, Template
+from folium.plugins import AntPath
 
 from routing_integration import RouteResult
 
@@ -390,3 +393,128 @@ def normalize_weights(alpha: float, beta: float, gamma: float) -> Tuple[float, f
     if total <= 0:
         return 1 / 3, 1 / 3, 1 / 3
     return alpha / total, beta / total, gamma / total
+
+
+def _route_latlon(graph: nx.MultiDiGraph, path: List[int]) -> List[List[float]]:
+    """Convert a node-id path into folium-friendly [lat, lon] points."""
+    coords: List[List[float]] = []
+    for node in path:
+        node_data = graph.nodes[node]
+        coords.append([float(node_data.get("y", 0.0)), float(node_data.get("x", 0.0))])
+    return coords
+
+
+def _add_recenter_control(map_obj: folium.Map, source_lat: float, source_lon: float) -> None:
+    """Add a custom recenter button below zoom controls similar to navigation apps."""
+    template = Template(
+        """
+        {% macro script(this, kwargs) %}
+        var map = {{this._parent.get_name()}};
+        var SourceRecenterControl = L.Control.extend({
+            options: { position: 'topleft' },
+            onAdd: function() {
+                var container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
+                container.style.backgroundColor = 'white';
+                container.style.width = '34px';
+                container.style.height = '34px';
+                container.style.lineHeight = '34px';
+                container.style.textAlign = 'center';
+                container.style.cursor = 'pointer';
+                container.style.fontSize = '18px';
+                container.style.marginTop = '50px';
+                container.title = 'Recenter to source';
+                container.innerHTML = '&#9673;';
+                L.DomEvent.disableClickPropagation(container);
+                L.DomEvent.on(container, 'click', function() {
+                    map.setView([{{this.source_lat}}, {{this.source_lon}}], Math.max(map.getZoom(), 14));
+                });
+                return container;
+            }
+        });
+        map.addControl(new SourceRecenterControl());
+        {% endmacro %}
+        """
+    )
+    control = MacroElement()
+    control._template = template
+    control.source_lat = source_lat
+    control.source_lon = source_lon
+    map_obj.get_root().add_child(control)
+
+
+def build_folium_route_map(
+    graph: nx.MultiDiGraph,
+    routes: Dict[str, RouteResult],
+    source_node: int,
+    destination_node: int,
+    mode: str,
+) -> folium.Map:
+    """Build an interactive folium map with route overlays and source recenter control."""
+    source_data = graph.nodes[source_node]
+    destination_data = graph.nodes[destination_node]
+    source_lat = float(source_data.get("y", 0.0))
+    source_lon = float(source_data.get("x", 0.0))
+    destination_lat = float(destination_data.get("y", 0.0))
+    destination_lon = float(destination_data.get("x", 0.0))
+
+    m = folium.Map(
+        location=[source_lat, source_lon],
+        zoom_start=14,
+        control_scale=True,
+        tiles="CartoDB positron",
+    )
+
+    for key in ROUTE_ORDER:
+        route = routes.get(key)
+        if not route:
+            continue
+        coords = _route_latlon(graph, route.path)
+        popup_html = (
+            f"<b>{route.label}</b><br/>"
+            f"Distance: {route.distance_m / 1000.0:.2f} km<br/>"
+            f"Time: {route.travel_time_s / 60.0:.2f} min<br/>"
+            f"Emissions: {route.emission_g:.1f} g"
+        )
+
+        if mode == "Animated traversal":
+            AntPath(
+                locations=coords,
+                color=ROUTE_COLOR_HEX[key],
+                pulse_color="#ffffff",
+                weight=6,
+                delay=800,
+                tooltip=route.label,
+            ).add_to(m)
+            folium.PolyLine(
+                locations=coords,
+                color=ROUTE_COLOR_HEX[key],
+                weight=2,
+                opacity=0.55,
+                popup=folium.Popup(popup_html, max_width=260),
+            ).add_to(m)
+        else:
+            folium.PolyLine(
+                locations=coords,
+                color=ROUTE_COLOR_HEX[key],
+                weight=6,
+                opacity=0.9,
+                tooltip=route.label,
+                popup=folium.Popup(popup_html, max_width=260),
+            ).add_to(m)
+
+    folium.Marker(
+        location=[source_lat, source_lon],
+        tooltip="Source",
+        popup="Source",
+        icon=folium.Icon(color="green", icon="play", prefix="fa"),
+    ).add_to(m)
+
+    folium.Marker(
+        location=[destination_lat, destination_lon],
+        tooltip="Destination",
+        popup="Destination",
+        icon=folium.Icon(color="red", icon="flag", prefix="fa"),
+    ).add_to(m)
+
+    _add_recenter_control(m, source_lat, source_lon)
+    return m

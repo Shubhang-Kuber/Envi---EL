@@ -10,6 +10,7 @@ import random
 
 import pandas as pd
 import streamlit as st
+from streamlit_folium import st_folium
 
 from routing_integration import (
     get_routes,
@@ -19,8 +20,8 @@ from routing_integration import (
     run_route_simulation,
 )
 from utils import (
+    build_folium_route_map,
     build_comparison_charts,
-    build_route_map,
     build_simulation_figures,
     inject_app_styles,
     metrics_cards_html,
@@ -177,7 +178,14 @@ route_df = route_dataframe(routes)
 path_df, center = to_path_rows(graph, routes)
 
 st.subheader("Interactive Route Map")
-st.pydeck_chart(build_route_map(path_df, center, map_mode), use_container_width=True)
+route_map = build_folium_route_map(
+    graph,
+    routes,
+    source_node=st.session_state.src,
+    destination_node=st.session_state.dst,
+    mode=map_mode,
+)
+st_folium(route_map, width=None, height=620, returned_objects=[])
 
 st.subheader("Metrics Panel")
 card_columns = st.columns(len(route_df))
