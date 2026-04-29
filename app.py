@@ -48,25 +48,44 @@ def cached_graph(place_name: str, cache_path: str):
 
 
 @st.cache_data(show_spinner=False)
-def cached_node_labels(_graph, num_locations=10) -> pd.DataFrame:
-    """Prepare selector dataframe from graph nodes, limited to a fixed number of key locations."""
-    import random
-    all_nodes = list(list_nodes(_graph))
-    # Pick fixed locations based on a deterministic seed 
-    # to maintain consistency for visualization
-    random.seed(42)
-    selected_nodes = random.sample(all_nodes, min(len(all_nodes), num_locations))
-    
+def cached_node_labels(_graph) -> pd.DataFrame:
+    """Prepare selector dataframe for fixed prominent locations."""
+    # predefined real-world coordinates and labels in the default loaded region (Indiranagar/Bengaluru)
+    # These act as the intuitive choices mapped to the nearest graph nodes
+    places = [
+        {"name": "Indiranagar Metro Station", "lat": 12.9780, "lon": 77.6387},
+        {"name": "Toit Brewpub (100 Ft Road)", "lat": 12.9791, "lon": 77.6407},
+        {"name": "Defence Colony Park", "lat": 12.9715, "lon": 77.6358},
+        {"name": "12th Main Junction", "lat": 12.9710, "lon": 77.6401},
+        {"name": "Binnamangala", "lat": 12.9760, "lon": 77.6350},
+        {"name": "ESI Hospital (Indiranagar)", "lat": 12.9702, "lon": 77.6385},
+        {"name": "Halasuru Metro Station", "lat": 12.9749, "lon": 77.6265},
+        {"name": "Swami Vivekananda Road Station", "lat": 12.9863, "lon": 77.6449},
+        {"name": "Domlur Layout", "lat": 12.9625, "lon": 77.6388},
+        {"name": "Old Airport Road Junction", "lat": 12.9592, "lon": 77.6493},
+    ]
+
     records = []
-    for idx, node_id in enumerate(selected_nodes):
-        node_id_int = int(node_id)
-        # Assign intuitive names to the sampled locations
-        name = f"Location {idx + 1}"
-        records.append({
-            "node": node_id_int, 
-            "label": f"{name} ({node_label(_graph, node_id_int)})",
-            "name": name
-        })
+    # Identify the nearest actual node ID on the graph for each coordinate
+    for place in places:
+        closest_node = None
+        min_dist = float("inf")
+        # simple euclidean matching for snapping points to the drive graph
+        for node_id, data in _graph.nodes(data=True):
+            ny, nx_val = data.get("y"), data.get("x")
+            if ny is None or nx_val is None:
+                continue
+            dist = (ny - place["lat"])**2 + (nx_val - place["lon"])**2
+            if dist < min_dist:
+                min_dist = dist
+                closest_node = node_id
+        
+        if closest_node is not None:
+            records.append({
+                "node": int(closest_node),
+                "label": place["name"],
+                "name": place["name"]
+            })
     return pd.DataFrame(records)
 
 
@@ -158,7 +177,7 @@ with controls[1]:
 with controls[2]:
     st.write("")
     st.write("")
-    randomize = st.button("Random pair")
+    randomize = st.button("Random pair", type="primary")
 
 if randomize:
     sampled = random.sample(nodes_df["node"].tolist(), 2)

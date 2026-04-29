@@ -517,4 +517,36 @@ def build_folium_route_map(
     ).add_to(m)
 
     _add_recenter_control(m, source_lat, source_lon)
+
+    # Add Legend to the map
+    template = """
+    {% macro html(this, kwargs) %}
+    <div style="
+        position: fixed; 
+        top: 10px; 
+        right: 10px; 
+        width: 160px; 
+        height: auto; 
+        z-index:9999; 
+        background-color: white; 
+        color: black;
+        border: 2px solid grey; 
+        padding: 10px;
+        border-radius: 6px;
+        box-shadow: 3px 3px 5px rgba(0,0,0,0.3);
+        font-family: Arial, sans-serif;
+        font-size: 14px;
+        ">
+      <h4 style="margin-top: 0; margin-bottom: 10px; font-size: 16px; color: black;">Route Legend</h4>
+      <div style="margin-bottom: 5px; color: black;"><i style="background: #e13b30; width: 14px; height: 14px; display: inline-block; border-radius: 50%; margin-right: 5px;"></i> Shortest</div>
+      <div style="margin-bottom: 5px; color: black;"><i style="background: #3078e1; width: 14px; height: 14px; display: inline-block; border-radius: 50%; margin-right: 5px;"></i> Fastest</div>
+      <div style="margin-bottom: 5px; color: black;"><i style="background: #22a854; width: 14px; height: 14px; display: inline-block; border-radius: 50%; margin-right: 5px;"></i> Carbon-aware</div>
+    </div>
+    {% endmacro %}
+    """
+    
+    macro = MacroElement()
+    macro._template = Template(template)
+    m.get_root().add_child(macro)
+
     return m
