@@ -50,19 +50,18 @@ def cached_graph(place_name: str, cache_path: str):
 @st.cache_data(show_spinner=False)
 def cached_node_labels(_graph) -> pd.DataFrame:
     """Prepare selector dataframe for fixed prominent locations."""
-    # predefined real-world coordinates and labels in the default loaded region (Indiranagar/Bengaluru)
-    # These act as the intuitive choices mapped to the nearest graph nodes
+    # Dropdowns will now load these major, bad-traffic city junctions spanning > 10 km
     places = [
-        {"name": "Indiranagar Metro Station", "lat": 12.9780, "lon": 77.6387},
-        {"name": "Toit Brewpub (100 Ft Road)", "lat": 12.9791, "lon": 77.6407},
-        {"name": "Defence Colony Park", "lat": 12.9715, "lon": 77.6358},
-        {"name": "12th Main Junction", "lat": 12.9710, "lon": 77.6401},
-        {"name": "Binnamangala", "lat": 12.9760, "lon": 77.6350},
-        {"name": "ESI Hospital (Indiranagar)", "lat": 12.9702, "lon": 77.6385},
-        {"name": "Halasuru Metro Station", "lat": 12.9749, "lon": 77.6265},
-        {"name": "Swami Vivekananda Road Station", "lat": 12.9863, "lon": 77.6449},
-        {"name": "Domlur Layout", "lat": 12.9625, "lon": 77.6388},
-        {"name": "Old Airport Road Junction", "lat": 12.9592, "lon": 77.6493},
+        {"name": "Silk Board Junction", "lat": 12.9176, "lon": 77.6238},
+        {"name": "KSR Bengaluru Railway Station", "lat": 12.9781, "lon": 77.5695},
+        {"name": "Hebbal Flyover", "lat": 13.0354, "lon": 77.5988},
+        {"name": "Byappanahalli Metro", "lat": 12.9906, "lon": 77.6525},
+        {"name": "Kempegowda International Airport", "lat": 13.1989, "lon": 77.7068},
+        {"name": "Whitefield (Hope Farm)", "lat": 12.9839, "lon": 77.7516},
+        {"name": "Electronic City (Infosys)", "lat": 12.8452, "lon": 77.6601},
+        {"name": "Yeshwanthpur Junction", "lat": 13.0219, "lon": 77.5540},
+        {"name": "KR Puram Hanging Bridge", "lat": 13.0016, "lon": 77.6746},
+        {"name": "Majestic Bus Stand", "lat": 12.9766, "lon": 77.5713},
     ]
 
     records = []
@@ -101,8 +100,8 @@ st.markdown(
 
 with st.sidebar:
     st.header("Configuration")
-    place_name = st.text_input("Place", value="Indiranagar, Bengaluru, India")
-    cache_path = st.text_input("Graph cache", value="data/graph.pkl")
+    place_name = st.text_input("Place", value="Bengaluru, India")
+    cache_path = st.text_input("Graph cache", value="data/bengaluru_graph.pkl")
 
     st.markdown("### Objective Weights")
     alpha = st.slider("alpha (distance)", 0.0, 1.0, 0.2, 0.01)
@@ -180,7 +179,8 @@ with controls[2]:
     randomize = st.button("Random pair", type="primary")
 
 if randomize:
-    sampled = random.sample(nodes_df["node"].tolist(), 2)
+    unique_nodes = list(set(nodes_df["node"].tolist()))
+    sampled = random.sample(unique_nodes, 2)
     st.session_state.src = int(sampled[0])
     st.session_state.dst = int(sampled[1])
     st.rerun()

@@ -461,8 +461,28 @@ def build_folium_route_map(
         location=[source_lat, source_lon],
         zoom_start=14,
         control_scale=True,
-        tiles="CartoDB positron",
+        tiles=None,
     )
+
+    # Add dynamic and realistic tile layers for different visualizations
+    folium.TileLayer(
+        tiles="OpenStreetMap", 
+        name="Realistic Street View (Default)",
+        show=True
+    ).add_to(m)
+    folium.TileLayer(
+        tiles="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+        attr="Esri",
+        name="Satellite View (Realistic)",
+    ).add_to(m)
+    folium.TileLayer(
+        tiles="CartoDB dark_matter", 
+        name="Dark Mode (Dynamic)", 
+    ).add_to(m)
+    folium.TileLayer(
+        tiles="CartoDB positron", 
+        name="Light Mode (Minimal)",
+    ).add_to(m)
 
     for key in ROUTE_ORDER:
         route = routes.get(key)
@@ -502,6 +522,17 @@ def build_folium_route_map(
                 popup=folium.Popup(popup_html, max_width=260),
             ).add_to(m)
 
+    # Source icon with pulsing dynamic ring
+    folium.CircleMarker(
+        location=[source_lat, source_lon],
+        radius=12,
+        color="white",
+        weight=2,
+        fill=True,
+        fill_color="green",
+        fill_opacity=0.7,
+        tooltip="Start Location",
+    ).add_to(m)
     folium.Marker(
         location=[source_lat, source_lon],
         tooltip="Source",
@@ -509,6 +540,17 @@ def build_folium_route_map(
         icon=folium.Icon(color="green", icon="play", prefix="fa"),
     ).add_to(m)
 
+    # Destination icon with dynamic pulsing ring
+    folium.CircleMarker(
+        location=[destination_lat, destination_lon],
+        radius=12,
+        color="white",
+        weight=2,
+        fill=True,
+        fill_color="red",
+        fill_opacity=0.7,
+        tooltip="End Location",
+    ).add_to(m)
     folium.Marker(
         location=[destination_lat, destination_lon],
         tooltip="Destination",
@@ -548,5 +590,7 @@ def build_folium_route_map(
     macro = MacroElement()
     macro._template = Template(template)
     m.get_root().add_child(macro)
+
+    folium.LayerControl(position='bottomright', collapsed=True).add_to(m)
 
     return m
