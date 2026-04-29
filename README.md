@@ -57,8 +57,15 @@ pip install -r requirements.txt
 > Requires Python 3.10+. On Windows, if `osmnx` fails, run:  
 > `pip install osmnx --pre`
 
-### 2. Run the full pipeline
+### 2. Run the Dashboard / Pipeline
 
+To run the **Streamlit Interactive UI Dashboard** (recommended):
+```bash
+streamlit run app.py
+```
+> The dashboard provides a dynamic map with a dark/light mode toggle, 10 predefined bad-traffic junctions in Bengaluru, sliders to adjust weights in real-time, and live comparisons.
+
+To run the **Headless Analytical Pipeline** (for generating CSVs and static PNG charts):
 ```bash
 python main.py
 ```
