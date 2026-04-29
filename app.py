@@ -48,11 +48,25 @@ def cached_graph(place_name: str, cache_path: str):
 
 
 @st.cache_data(show_spinner=False)
-def cached_node_labels(_graph) -> pd.DataFrame:
-    """Prepare selector dataframe from graph nodes."""
+def cached_node_labels(_graph, num_locations=10) -> pd.DataFrame:
+    """Prepare selector dataframe from graph nodes, limited to a fixed number of key locations."""
+    import random
+    all_nodes = list(list_nodes(_graph))
+    # Pick fixed locations based on a deterministic seed 
+    # to maintain consistency for visualization
+    random.seed(42)
+    selected_nodes = random.sample(all_nodes, min(len(all_nodes), num_locations))
+    
     records = []
-    for node_id in list_nodes(_graph):
-        records.append({"node": int(node_id), "label": node_label(_graph, int(node_id))})
+    for idx, node_id in enumerate(selected_nodes):
+        node_id_int = int(node_id)
+        # Assign intuitive names to the sampled locations
+        name = f"Location {idx + 1}"
+        records.append({
+            "node": node_id_int, 
+            "label": f"{name} ({node_label(_graph, node_id_int)})",
+            "name": name
+        })
     return pd.DataFrame(records)
 
 
@@ -131,14 +145,14 @@ with controls[0]:
     src = st.selectbox(
         "Source node",
         options=nodes_df["node"].tolist(),
-        format_func=lambda x: node_label(graph, int(x)),
+        format_func=lambda x: nodes_df[nodes_df["node"] == x]["label"].values[0] if x in nodes_df["node"].values else str(x),
         index=_safe_index(nodes_df, st.session_state.src),
     )
 with controls[1]:
     dst = st.selectbox(
         "Destination node",
         options=nodes_df["node"].tolist(),
-        format_func=lambda x: node_label(graph, int(x)),
+        format_func=lambda x: nodes_df[nodes_df["node"] == x]["label"].values[0] if x in nodes_df["node"].values else str(x),
         index=_safe_index(nodes_df, st.session_state.dst),
     )
 with controls[2]:
